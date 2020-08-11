@@ -1,12 +1,19 @@
 [package]
 name = "simple-rate-limit"
 version = "0.1.0"
+description = "Rate limit enforcement as simple data structures, no atomics."
+keywords = ["rate", "limit", "limiter", "quota"]
+categories = ["algorithms", "data-structures", "date-and-time"]
 authors = ["James Laver <james.laver@gmail.com>"]
+homepage = "https://github.com/irrustible/simple-rate-limit"
+repository = "https://github.com/irrustible/simple-rate-limit"
+documentation = "https://docs.rs/simple-rate-limit"
 edition = "2018"
+license = "MPL-2.0"
+readme = "README.md"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-# ring-vec = "0.1"
-ring-vec = { git = "https://github.com/irrustible/ring-vec", branch = "main" }
+ring-vec = "0.1"
 # ring-vec = { path = "../ring-vec" }
