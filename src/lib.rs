@@ -1,16 +1,16 @@
 use ring_vec::RingVec;
 use std::time::{Duration, Instant};
 
-/// A [`RateLimit`] is how many times an event may occur in a given period of time.
-#[derive(Clone, Copy, Eq, PartialEq)]
+/// How many times an event may occur in a given [`Duration`].
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub struct RateLimit {
     pub count: usize,
     pub period: Duration,
 }
 
 impl RateLimit {
-    /// Creates a new [`RateLimit`] with the provided values.
-    /// Warning: Panics if count is zero.
+    /// Creates a new [`RateLimit`] with the provided values, but only
+    /// if the count is not zero (otherwise, what's the point?)
     pub fn new(count: usize, period: Duration) -> Option<RateLimit> {
         if count > 0 {
             Some(RateLimit { count, period })
@@ -20,33 +20,34 @@ impl RateLimit {
     }
 }
 
-/// A [`RateLimiter`] enforces a [`RateLimit`] by maintaining a ring
-/// vector of timestamps capped at the [`RateLimit::count`].
+/// Enforces a [`RateLimit`] by maintaining a ring vector of
+/// timestamps capped at the [`RateLimit::count`].
 pub struct RateLimiter {
     pub limit: RateLimit,
     readings: RingVec<Instant>,
 }
 
 impl RateLimiter {
-    /// Creates a new `RateLimiter` without preallocating
-    /// storage. Ideal if you might never use it.
+    /// Create without preallocating storage. Ideal if it may go unused.
     pub fn new(limit: RateLimit) -> RateLimiter {
         RateLimiter { limit, readings: RingVec::new(limit.count) }
     }
 
-    /// Creates a new `RateLimiter` with preallocated storage. Ideal
-    /// if you're likely to use it a lot to avoid resizing during fill.
+    /// Create with preallocated storage. Ideal if you're likely to
+    /// use it a lot to avoid resizing during fill.
     pub fn new_preallocated(limit: RateLimit) -> RateLimiter {
         RateLimiter { limit, readings: RingVec::new_preallocated(limit.count) }
     }
 
-    /// Logs the current time with the [`RateLimiter`] and checks if
-    /// the event falls within the rate limit.
+    /// Checks whether we're able to perform the event at this
+    /// time. On success, logs the current time to count towards
+    /// future enforcement.
     pub fn check(&mut self) -> bool { self.check_at(Instant::now()) }
 
-    /// Like `check`, but you can provide an arbitrary timestamp
-    /// (useful for tests!).  Promise that you'll only march forwards
-    /// in time and we promise to return the correct answers.
+    /// Like [`RateLimiter::check`], but you can provide an arbitrary
+    /// timestamp (useful for tests!).
+    ///
+    /// Warning: do not go backwards in time, things will mess up.
     pub fn check_at(&mut self, instant: Instant) -> bool {
         if self.readings.push(instant).is_ok() { return true; }
         let reclaimed = self.sweep(instant);
@@ -56,8 +57,8 @@ impl RateLimiter {
         reclaimed
     }
 
-    /// Removes all the readings from longer than the contained
-    /// [`RateLimit`]'s period ago, relative to the provided instant.
+    /// Removes all readings before the period of our [`RateLimit`],
+    /// relative to the provided [`Instant`].
     pub fn sweep(&mut self, instant: Instant) -> bool {
         let bench = instant - self.limit.period;
         let mut reclaimed = false;
@@ -68,13 +69,5 @@ impl RateLimiter {
             } else { break; }
         }
         reclaimed
-    }
-}
-
-#[cfg(test)]
-mod tests {
-    #[test]
-    fn it_works() {
-        assert_eq!(2 + 2, 4);
     }
 }

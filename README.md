@@ -4,11 +4,21 @@
 [![Package](https://img.shields.io/crates/v/simple-rate-limit.svg)](https://crates.io/crates/simple-rate-limit)
 [![Documentation](https://docs.rs/simple-rate-limit/badge.svg)](https://docs.rs/simple-rate-limit)
 
-TODO: Usage.
+```rust
+#[test]
+fn one_nanosecond() {
+    let rl = RateLimit::new(1, Duration::from_nanos(1)).unwrap();
+    let mut rler = RateLimiter::new(rl);
+    let then = Instant::now();
+    assert_eq!(rler.check_at(then), true);
+    let now = then + Duration::from_nanos(2);
+    assert_eq!(rler.check_at(now), true);
+}
+```
 
 ## Status
 
-Brand new, but seems to work. Lacks automated tests, but has manual ones.
+Beta? Only has basic tests but seems to work.
 
 ## Copyright and License
 
